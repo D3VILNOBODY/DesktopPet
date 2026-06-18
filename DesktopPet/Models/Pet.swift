@@ -43,6 +43,7 @@ final class Pet: Identifiable, Sendable {
         case grabbed
     }
     
+    var id: String
     var name: String
     var size: CGSize
     var images: [PetState: [NSImage]]
@@ -74,6 +75,7 @@ final class Pet: Identifiable, Sendable {
         let bottomMiddleOfScreen = NSPoint(x: mainScreen.frame.width / 2, y: mainScreen.frame.origin.y)
         
         self.position = bottomMiddleOfScreen
+        self.id = "\(name)-\(UUID())"
         self.name = json.name
         self.size = CGSize(width: json.width, height: json.height)
         self.scale = CGPoint(x: json.scaleX, y: json.scaleY)

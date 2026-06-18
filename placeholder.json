@@ -1,0 +1,28 @@
+{
+    "name": "blobulob",
+    "width": 200,
+    "height": 200,
+    "scaleX": 1,
+    "scaleY": 1,
+    "sprites": [
+        {
+            "state": "idle",
+            "images": []
+        },
+        {
+            "state": "moving",
+            "images": []
+        },
+        {
+            "state": "sitting",
+            "images": []
+        },        {
+            "state": "falling",
+            "images": []
+        },
+        {
+            "state": "dragged",
+            "images": []
+        },
+    ]
+}
