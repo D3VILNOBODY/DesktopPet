@@ -44,6 +44,7 @@ final class Pet: Identifiable, Sendable {
     }
     
     var id: String
+    var window: NSWindow
     var name: String
     var size: CGSize
     var images: [PetState: [NSImage]]
@@ -59,7 +60,7 @@ final class Pet: Identifiable, Sendable {
     private var currentTimer: Timer?
     private var targetPosition: NSPoint?
     
-    init(fromURL url: URL) {
+    init(fromURL url: URL, window: NSWindow) {
         let decoder = JSONDecoder()
         decoder.dataDecodingStrategy = .base64
         
@@ -75,7 +76,8 @@ final class Pet: Identifiable, Sendable {
         let bottomMiddleOfScreen = NSPoint(x: mainScreen.frame.width / 2, y: mainScreen.frame.origin.y)
         
         self.position = bottomMiddleOfScreen
-        self.id = "\(name)-\(UUID())"
+        self.id = "\(json.name)-\(UUID())"
+        self.window = window
         self.name = json.name
         self.size = CGSize(width: json.width, height: json.height)
         self.scale = CGPoint(x: json.scaleX, y: json.scaleY)
