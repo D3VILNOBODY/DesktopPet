@@ -43,7 +43,6 @@ final class Pet: Identifiable, Sendable {
         case grabbed
     }
     
-    var window: Window
     var name: String
     var size: CGSize
     var images: [PetState: [NSImage]]
