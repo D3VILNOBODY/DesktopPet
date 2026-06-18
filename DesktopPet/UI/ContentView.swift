@@ -9,7 +9,7 @@ import AppKit
 import Cocoa
 
 struct ContentView: View {
-    @State var activePet = Pet(fromURL: Bundle.main.url(forResource: "malibu", withExtension: "json")!)
+    @State var activePet = Pet(fromURL: Bundle.main.url(forResource: "placeholder", withExtension: "json")!)
     
     var body: some View {
         PetView(activePet: $activePet)
