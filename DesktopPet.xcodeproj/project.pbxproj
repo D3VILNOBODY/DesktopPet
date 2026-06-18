@@ -6,6 +6,11 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		ED7D777B2FE1889E00E90170 /* InMemoryLogging in Frameworks */ = {isa = PBXBuildFile; productRef = ED7D777A2FE1889E00E90170 /* InMemoryLogging */; };
+		ED7D777D2FE1889E00E90170 /* Logging in Frameworks */ = {isa = PBXBuildFile; productRef = ED7D777C2FE1889E00E90170 /* Logging */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
 		ED99D6862FDBFC2600AC9AAC /* DesktopPet.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = DesktopPet.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -23,6 +28,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				ED7D777D2FE1889E00E90170 /* Logging in Frameworks */,
+				ED7D777B2FE1889E00E90170 /* InMemoryLogging in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -65,6 +72,8 @@
 			);
 			name = DesktopPet;
 			packageProductDependencies = (
+				ED7D777A2FE1889E00E90170 /* InMemoryLogging */,
+				ED7D777C2FE1889E00E90170 /* Logging */,
 			);
 			productName = DesktopPet;
 			productReference = ED99D6862FDBFC2600AC9AAC /* DesktopPet.app */;
@@ -94,6 +103,9 @@
 			);
 			mainGroup = ED99D67D2FDBFC2600AC9AAC;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				ED7D77792FE1889E00E90170 /* XCRemoteSwiftPackageReference "swift-log" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = ED99D6872FDBFC2600AC9AAC /* Products */;
 			projectDirPath = "";
@@ -251,9 +263,8 @@
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
-				ENABLE_APP_SANDBOX = YES;
+				ENABLE_APP_SANDBOX = NO;
 				ENABLE_PREVIEWS = YES;
-				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -281,9 +292,8 @@
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
-				ENABLE_APP_SANDBOX = YES;
+				ENABLE_APP_SANDBOX = NO;
 				ENABLE_PREVIEWS = YES;
-				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -325,6 +335,30 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		ED7D77792FE1889E00E90170 /* XCRemoteSwiftPackageReference "swift-log" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/apple/swift-log";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.13.2;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		ED7D777A2FE1889E00E90170 /* InMemoryLogging */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = ED7D77792FE1889E00E90170 /* XCRemoteSwiftPackageReference "swift-log" */;
+			productName = InMemoryLogging;
+		};
+		ED7D777C2FE1889E00E90170 /* Logging */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = ED7D77792FE1889E00E90170 /* XCRemoteSwiftPackageReference "swift-log" */;
+			productName = Logging;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = ED99D67E2FDBFC2600AC9AAC /* Project object */;
 }
