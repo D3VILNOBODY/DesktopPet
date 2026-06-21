@@ -10,28 +10,27 @@ import SwiftUI
 struct DesktopPetApp: App {
     @NSApplicationDelegateAdaptor var appDelegate: DesktopPetAppDelegate
     
+    @State var petManager: PetManager = PetManager()
+    
     var body: some Scene {
         WindowGroup {
             ContentView()
-//            VStack {
-//                Button("Show image window") {
-//                    appDelegate.createImageWindow(nil)
-//                }
-//                Button("Close image window") {
-//                    appDelegate.closeImageWindow(nil)
-//                }
+        }
+        .environment(petManager)
+//        .windowLevel(.floating)
+//        .defaultSize(CGSize(width: 100.0, height: 100.0))
+//        .windowResizability(.contentSize)
+//        .commandsRemoved()
+//        .commands {
+//            CommandGroup(before: .appSettings) {
+//                Button("Quit") {
+//                    NSApplication.shared.terminate(nil)
+//                }.keyboardShortcut("Q", modifiers: .command)
 //            }
-        }
-        .windowLevel(.floating)
-        .defaultSize(CGSize(width: 100.0, height: 100.0))
-        .windowResizability(.contentSize)
-        .commandsRemoved()
-        .commands {
-            CommandGroup(before: .appSettings) {
-                Button("Quit") {
-                    NSApplication.shared.terminate(nil)
-                }.keyboardShortcut("Q", modifiers: .command)
-            }
-        }
+//        }
+    }
+    
+    init() {
+        petManager.startRunLoop()
     }
 }

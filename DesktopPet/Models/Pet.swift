@@ -3,16 +3,15 @@
 // Created by ferris on 12/06/2026.
 //
 
-
-import Foundation
-import CoreGraphics
 import AppKit
+import CoreGraphics
+import Foundation
 import Logging
 
 struct PetSprite {
     var state: Pet.PetState
     var images: [NSImage]
-    
+
     init(fromJSON json: PetSpriteJSON) {
         self.state = .idle
         self.images = []
@@ -33,6 +32,12 @@ struct PetJSON: Codable {
     let sprites: [PetSpriteJSON]
 }
 
+enum PetError: Error {
+    case jsonParseFailure
+    case stringToStateFailure(String)
+    case noWindow
+}
+
 @Observable
 final class Pet: Identifiable, Sendable {
     enum PetState: CaseIterable {
@@ -42,12 +47,12 @@ final class Pet: Identifiable, Sendable {
         case falling
         case grabbed
     }
-    
+
     var id: String
-    var window: NSWindow
+    var window: NSWindow?
     var name: String
     var size: CGSize
-    var images: [PetState: [NSImage]]
+    var sprites: [PetState : [NSImage]]
     var scale: CGPoint = CGPoint(x: 1, y: 1)
     var rotation: Double = 0
     var position: CGPoint
@@ -55,47 +60,53 @@ final class Pet: Identifiable, Sendable {
     var currentSprite: Int = 0
     var speed: Double = 18
     var gravity: Double = 100
-    
+
     private let randomlyChoosableStates: [PetState] = [.idle, .moving, .sitting]
     private var currentTimer: Timer?
     private var targetPosition: NSPoint?
-    
-    init(fromURL url: URL, window: NSWindow) {
+
+    init(fromURL url: URL) throws {
         let decoder = JSONDecoder()
         decoder.dataDecodingStrategy = .base64
-        
+
         guard let data = try? Data(contentsOf: url) else {
             fatalError("Failed to create data with the contents of url \(url)")
         }
-        
+
         guard let json = try? decoder.decode(PetJSON.self, from: data) else {
-            fatalError("Failed to decode data to json")
+            Logger.pet.error("Failed to decode json data")
+            throw PetError.jsonParseFailure
         }
-        
+
         let mainScreen = NSScreen.main!
-        let bottomMiddleOfScreen = NSPoint(x: mainScreen.frame.width / 2, y: mainScreen.frame.origin.y)
-        
+        let bottomMiddleOfScreen = NSPoint(
+            x: mainScreen.frame.width / 2,
+            y: mainScreen.frame.origin.y
+        )
+
         self.position = bottomMiddleOfScreen
         self.id = "\(json.name)-\(UUID())"
-        self.window = window
+        self.window = nil
         self.name = json.name
         self.size = CGSize(width: json.width, height: json.height)
         self.scale = CGPoint(x: json.scaleX, y: json.scaleY)
-        self.images = [:]
-        
+        self.sprites = [:]
+
         for spriteJSON in json.sprites {
             var sprites: [NSImage] = []
             for imageData in spriteJSON.images {
                 let img = NSImage(data: imageData)!
                 sprites.append(img)
             }
+
             guard let state = Pet.stringToPetState(spriteJSON.state) else {
-                fatalError("Failed to convert \(spriteJSON.state) to PetState")
+                throw PetError.stringToStateFailure(spriteJSON.state)
             }
-            self.images[state] = sprites
+
+            self.sprites[state] = sprites
         }
     }
-    
+
     static func stringToPetState(_ str: String) -> PetState? {
         return switch str {
         case "idle":
@@ -113,16 +124,23 @@ final class Pet: Identifiable, Sendable {
         }
     }
     
+    func setWindow(_ window: NSWindow?) {
+        self.window = window
+    }
+
     func setState(_ newState: PetState) {
         if newState == state {
             return
         }
-        
+
         currentSprite = 0
         state = newState
-        Logger.pet.notice("Changed state", metadata: ["newState": "\(newState)"])
+        Logger.pet.notice(
+            "Changed state",
+            metadata: ["newState": "\(newState)"]
+        )
     }
-    
+
     private func randomizeState() {
         while true {
             let s = randomlyChoosableStates.randomElement()!
@@ -133,18 +151,18 @@ final class Pet: Identifiable, Sendable {
             break
         }
     }
-    
+
     func cycleSprite() {
-        let upperBound = images[state]!.count - 1
+        let upperBound = sprites[state]!.count - 1
         var nextSprite = currentSprite + 1
         if nextSprite > upperBound {
             nextSprite = 0
         }
         currentSprite = nextSprite
     }
-    
-    func update(dt: Double) async {
-        if !isOnFloor() {
+
+    func update(dt: Double) {
+        if try! !isOnFloor() {
             targetPosition = nil
             if let currentTimer = currentTimer {
                 currentTimer.invalidate()
@@ -152,90 +170,112 @@ final class Pet: Identifiable, Sendable {
             currentTimer = nil
             setState(.falling)
         }
-        
+
         switch state {
         case .idle:
-            await idle(dt: dt)
+            idle(dt: dt)
         case .sitting:
-            await sit(dt: dt)
+            sit(dt: dt)
         case .moving:
-            await move(dt: dt)
+            move(dt: dt)
         case .falling:
-            await applyGravity(dt: dt)
+            applyGravity(dt: dt)
         default:
             break
         }
     }
-    
-    func isOnFloor() -> Bool {
+
+    func isOnFloor() throws -> Bool {
+        guard let window = window else {
+            throw PetError.noWindow
+        }
+        
         return window.frame.origin.y <= window.screen!.frame.origin.y
     }
-    
-    private func applyGravity(dt: Double) async {
-        if isOnFloor() {
+
+    private func applyGravity(dt: Double) {
+        guard let window = self.window else {
+            return
+        }
+
+        if try! isOnFloor() {
             randomizeState()
             return
         }
+
+        let newWindowPositionY = clamp(
+            window.frame.origin.y - gravity * dt,
+            lowerBound: window.screen!.frame.origin.y,
+            upperBound: .infinity
+        )
         
-        let newWindowPositionY = clamp(window.frame.origin.y - gravity * dt, lowerBound: window.screen!.frame.origin.y, upperBound: .infinity)
         position = NSPoint(x: window.frame.origin.x, y: newWindowPositionY)
+        
         window.setFrameOrigin(position)
     }
-    
-    private func idle(dt: Double) async {
+
+    private func idle(dt: Double) {
         if currentTimer != nil {
             return
         }
-        
+
         setState(.idle)
-        
-//        let idleTime = Int.random(in: 5...15)
-        let idleTime = 3
-        let timer = Timer(fire: .now.addingTimeInterval(TimeInterval(idleTime)),
-                          interval: 0,
-                          repeats: false,
-                          block: { timer in
-            Logger.pet.warning("Idle timer over")
-            self.randomizeState()
-            self.currentTimer = nil
-        })
+
+        let idleTime = Int.random(in: 5...15)
+        let timer = Timer(
+            fire: .now.addingTimeInterval(TimeInterval(idleTime)),
+            interval: 0,
+            repeats: false,
+            block: { timer in
+                Logger.pet.warning("Idle timer over")
+                self.randomizeState()
+                self.currentTimer = nil
+            }
+        )
         RunLoop.main.add(timer, forMode: .common)
         currentTimer = timer
         Logger.pet.notice("Idling", metadata: ["idleTime": "\(idleTime)"])
     }
-    
-    private func sit(dt: Double) async {
+
+    private func sit(dt: Double) {
         if currentTimer != nil {
             return
         }
-        
+
         setState(.sitting)
-        
-//        let sitTime = Int.random(in: 10...45)
-        let sitTime = 3
-        let timer = Timer(fire: .now.addingTimeInterval(TimeInterval(sitTime)),
-                          interval: 0,
-                          repeats: false,
-                          block: { timer in
-            Logger.pet.notice("Sitting timer over")
-            self.randomizeState()
-            self.currentTimer = nil
-        })
+
+        let sitTime = Int.random(in: 10...45)
+        let timer = Timer(
+            fire: .now.addingTimeInterval(TimeInterval(sitTime)),
+            interval: 0,
+            repeats: false,
+            block: { timer in
+                Logger.pet.notice("Sitting timer over")
+                self.randomizeState()
+                self.currentTimer = nil
+            }
+        )
         RunLoop.main.add(timer, forMode: .common)
         currentTimer = timer
         Logger.pet.notice("Sitting", metadata: ["sitTime": "\(sitTime)"])
     }
-    
+
     private func moveWindowTowardsTarget(dt: Double) {
+        guard let window = window else {
+            return
+        }
+
         let vector = targetPosition! - position
-        let magnitude = CGPoint(x: sqrt(vector.x * vector.x),
-                                y: sqrt(vector.y * vector.y))
-        
+        let magnitude = CGPoint(
+            x: sqrt(vector.x * vector.x),
+            y: sqrt(vector.y * vector.y)
+        )
+
         var dx = vector.x / magnitude.x
         if dx.isNaN { dx = 0 }
         var dy = vector.y / magnitude.y
         if dy.isNaN { dy = 0 }
-        
+
         let direction = CGPoint(x: dx, y: dy)
         //Logger.pet.info("Vector results", metadata: ["vector": "\(vector)",
         //                                             "magnitude": "\(magnitude)",
@@ -243,33 +283,37 @@ final class Pet: Identifiable, Sendable {
         let newFrameOrigin = position + NSPoint(x: speed * direction.x * dt,
                                                 y: speed * direction.y * dt)
         
-        if direction.x >= 0 {
-            scale.x = 1
-        } else {
-            scale.x = -1
-        }
-        
+        scale.x = scale.x >= 0 ? 1 : -1
         position = newFrameOrigin
+        
         window.setFrameOrigin(position)
     }
-    
-    func move(dt: Double) async {
+
+    func move(dt: Double) {
+        guard let window = window else {
+            return
+        }
+
         if targetPosition == nil {
             let screen = window.screen!
-            // This is so fucked man holy shit
-            targetPosition = CGPoint(x: Double.random(in: screen.frame.origin.x...screen.frame.width - window.frame.width),
-                                     y: window.frame.origin.y)
+            
+            targetPosition = CGPoint(
+                x: Double.random(in: screen.frame.origin.x...screen.frame.width - window.frame.width),
+                y: window.frame.origin.y
+            )
             position = window.frame.origin
-            Logger.pet.notice("Target position set", metadata: ["targetPosition": "\(targetPosition ?? NSPoint(x: 0, y: 0))"])
+            
+            Logger.pet.notice("Target position set",
+                              metadata: ["targetPosition": "\(targetPosition ?? NSPoint(x: 0, y: 0))"])
         }
-        
+
         if window.frame.origin.approximatelyEqualTo(targetPosition!, epsilon: 0.5) {
             targetPosition = nil
             position = window.frame.origin
             randomizeState()
             return
         }
-        
+
         setState(.moving)
         moveWindowTowardsTarget(dt: dt)
     }

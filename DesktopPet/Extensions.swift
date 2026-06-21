@@ -6,6 +6,7 @@
 
 import Foundation
 import CoreGraphics
+import AppKit
 import Logging
 
 private let loggerSubsystem = Bundle.main.bundleIdentifier!
@@ -25,7 +26,10 @@ extension CGPoint: @retroactive AdditiveArithmetic {
     }
 }
 
+extension NSImage: @retroactive Identifiable {}
+
 extension Logger {
     static let pet = Logger(label: loggerSubsystem)
     static let window = Logger(label: loggerSubsystem)
+    static let petManager = Logger(label: loggerSubsystem)
 }
