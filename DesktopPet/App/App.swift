@@ -17,17 +17,6 @@ struct DesktopPetApp: App {
             ContentView()
         }
         .environment(petManager)
-//        .windowLevel(.floating)
-//        .defaultSize(CGSize(width: 100.0, height: 100.0))
-//        .windowResizability(.contentSize)
-//        .commandsRemoved()
-//        .commands {
-//            CommandGroup(before: .appSettings) {
-//                Button("Quit") {
-//                    NSApplication.shared.terminate(nil)
-//                }.keyboardShortcut("Q", modifiers: .command)
-//            }
-//        }
     }
     
     init() {

@@ -49,16 +49,18 @@ final class Pet: Identifiable, Sendable {
     }
 
     var id: String
+    var windowController: NSWindowController?
     var window: NSWindow?
     var name: String
     var size: CGSize
-    var sprites: [PetState : [NSImage]]
+    var sprites: [PetState : [NSImage]] = [:]
+    var isActive: Bool = false
     var scale: CGPoint = CGPoint(x: 1, y: 1)
     var rotation: Double = 0
     var position: CGPoint
     var state: PetState = .idle
     var currentSprite: Int = 0
-    var speed: Double = 18
+    var speed: Double = 30
     var gravity: Double = 100
 
     private let randomlyChoosableStates: [PetState] = [.idle, .moving, .sitting]
@@ -87,10 +89,10 @@ final class Pet: Identifiable, Sendable {
         self.position = bottomMiddleOfScreen
         self.id = "\(json.name)-\(UUID())"
         self.window = nil
+        self.window = nil
         self.name = json.name
         self.size = CGSize(width: json.width, height: json.height)
         self.scale = CGPoint(x: json.scaleX, y: json.scaleY)
-        self.sprites = [:]
 
         for spriteJSON in json.sprites {
             var sprites: [NSImage] = []
@@ -124,10 +126,14 @@ final class Pet: Identifiable, Sendable {
         }
     }
     
-    func setWindow(_ window: NSWindow?) {
-        self.window = window
+    func setWindowController(_ windowController: NSWindowController?) {
+        if windowController != self.windowController {
+            self.windowController?.close()
+        }
+        self.windowController = windowController
+        self.window = windowController?.window
     }
-
+    
     func setState(_ newState: PetState) {
         if newState == state {
             return
@@ -135,10 +141,8 @@ final class Pet: Identifiable, Sendable {
 
         currentSprite = 0
         state = newState
-        Logger.pet.notice(
-            "Changed state",
-            metadata: ["newState": "\(newState)"]
-        )
+        Logger.pet.notice("Changed state",
+                          metadata: ["newState": "\(newState)"])
     }
 
     private func randomizeState() {
@@ -162,6 +166,8 @@ final class Pet: Identifiable, Sendable {
     }
 
     func update(dt: Double) {
+        //Logger.pet.info("Updating", metadata: ["time": "\(Date.now)"])
+        
         if try! !isOnFloor() {
             targetPosition = nil
             if let currentTimer = currentTimer {
@@ -180,17 +186,23 @@ final class Pet: Identifiable, Sendable {
             move(dt: dt)
         case .falling:
             applyGravity(dt: dt)
-        default:
-            break
+        case .grabbed:
+            grabbed(dt: dt)
         }
     }
 
-    func isOnFloor() throws -> Bool {
+    private func isOnFloor() throws -> Bool {
         guard let window = window else {
             throw PetError.noWindow
         }
         
         return window.frame.origin.y <= window.screen!.frame.origin.y
+    }
+    
+    private func grabbed(dt: Double) {
+        currentTimer = nil
+        targetPosition = nil
+        Logger.pet.notice("PUT ME DOWNNNNN")
     }
 
     private func applyGravity(dt: Double) {

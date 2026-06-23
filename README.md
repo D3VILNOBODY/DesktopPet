@@ -10,3 +10,5 @@ pet configs are stored in the JSON format. an example of a pet config is shown b
 ![alt text](./ImageAssets/PetConfigExample.png "An example of a pet configuration file")
 
 the "images" field is an array of strings with images encoded in base64 by the way.
+
+pet files should be stored at `~/Library/Application Support/com.radpebblez.DesktopPet/pets/`.

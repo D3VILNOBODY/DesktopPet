@@ -12,8 +12,6 @@ import SwiftUI
 @Observable
 final class PetManager {
     var loadedPets: [Pet] = []
-    var activePets: [Pet] = []
-    var activeWindowControllers: [String : NSWindowController] = [:]
     var updateFrequency: Double = 1 / 60
     var deltaTime: Double = 1 / 60 // starts the same as update frequency but changes. TODO: yeah uh make this change
     
@@ -46,23 +44,44 @@ final class PetManager {
         }
     }
     
-    /// Puts a pet that is in `loadedPets` into `activePets`, making it able to be updated by `startRunLoop`.
-    func activatePet(id: String) {
-        var pet: Pet?
-        
+    func getLoadedPet(id: String) -> Pet? {
         for p in loadedPets {
             if p.id == id {
-                pet = p
-                break
+                return p
             }
         }
         
-        if let pet = pet {
-            let windowController = createPetWindow(forPet: pet)
-            pet.setWindow(windowController.window!)
-            activePets.append(pet)
-            Logger.petManager.notice("Activated pet",
-                                     metadata: ["id": "\(pet.id)"])
+        return nil
+    }
+    
+    func activatePet(id: String) {
+        if let pet = getLoadedPet(id: id) {
+            if pet.isActive {
+                Logger.petManager.notice("Pet already active",
+                                         metadata: ["id": "\(pet.id)"])
+            } else {
+                let windowController = createPetWindow(forPet: pet)
+                pet.setWindowController(windowController)
+                pet.isActive = true
+                
+                Logger.petManager.notice("Activated pet",
+                                         metadata: ["id": "\(pet.id)"])
+            }
+        }
+    }
+    
+    func deactivatePet(id: String) {
+        if let pet = getLoadedPet(id: id) {
+            if pet.isActive {
+                pet.setWindowController(nil)
+                pet.isActive = false
+                
+                Logger.petManager.notice("Deactivated pet",
+                                         metadata: ["id": "\(pet.id)"])
+            } else {
+                Logger.petManager.notice("Pet is already deactivated",
+                                         metadata: ["id": "\(pet.id)"])
+            }
         }
     }
     
@@ -71,17 +90,17 @@ final class PetManager {
         Logger.petManager.notice("Starting run loop...")
         
         Timer.scheduledTimer(withTimeInterval: updateFrequency, repeats: true, block: { timer in
-            for pet in self.activePets {
-                pet.update(dt: self.deltaTime)
+            for pet in self.loadedPets {
+                if pet.isActive {
+                    pet.update(dt: self.deltaTime)
+                }
             }
-            
-            //Logger.petManager.info("Run loop cycle ended", metadata: ["deltaTime": "\(self.deltaTime)"])
         })
     }
     
     func createPetWindow(forPet pet: Pet) -> NSWindowController {
         // There is already a window controller available for this, so dont make a new one
-        if let windowController = activeWindowControllers[pet.id] {
+        if let windowController = pet.windowController {
             Logger.petManager.notice("Window already exists")
             return windowController
         }
@@ -99,9 +118,7 @@ final class PetManager {
             .ignoresCycle
         ]
         window.level = .floating
-        window.styleMask = [
-            .borderless,
-        ]
+        window.styleMask = .borderless
         window.backgroundColor = .clear
         window.hidesOnDeactivate = false
         window.hasShadow = false
@@ -109,12 +126,9 @@ final class PetManager {
         window.setContentSize(NSSize(width: 100, height: 100))
         window.center()
         window.orderFront(nil)
-        //window.orderFrontRegardless()
-        //window.ignoresMouseEvents = true
         
         let windowController = NSWindowController(window: window)
-        
-        activeWindowControllers[pet.id] = windowController
+        pet.windowController = windowController
         
         return windowController
     }
